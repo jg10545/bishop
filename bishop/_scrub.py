@@ -41,3 +41,43 @@ def validate_code(code: str) -> bool:
             raise Exception("importing 'os', 'sys', and 'subprocess' not allowed")
 
     return True
+
+def code_checker(code):
+    """
+    Input a string containing some code. Return "pass" or "fail" depending on
+    whether the code passes our checks.
+    """
+    result = "pass"
+    if not code.strip().startswith("def"):
+        result = "fail: should start with a function definition"
+    elif not code.split("\n")[-1].strip().startswith("return"):
+        result = "fail: function needs to return something!"
+    elif "#" not in code:
+        result = "fail: please comment your code"
+    elif '"""' not in code:
+        result = "fail: please include a docstring"
+    elif "import" in code:
+        result = "fail: imports not permitted"
+    elif ("os." in code)|("sys." in code)|("subprocess" in code):
+        result = "fail: os, sys, and subprocess calls not permitted"
+    elif "eval(" in code:
+        result = "fail: eval() not permitted"
+    elif "exec(" in code:
+        result = "fail: exec() not permited"
+    print(result)
+    return result
+
+def code_checker_with_human_in_loop(code):
+    """
+    Input a string containing some code. Return "pass" or "fail" depending on
+    whether the code passes our checks.
+    """
+    result = code_checker(code)
+    if result == "pass":
+        print(code)
+        answer = input("Press enter if this code is OK; otherwise explain the problem:")
+        if len(answer.strip()) == 0:
+            return result
+        else:
+            return f"fail: {answer}"
+    return result

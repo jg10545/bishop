@@ -93,3 +93,9 @@ class AnalystSig(dspy.Signature):
     question:str = dspy.InputField()
     description:str = dspy.InputField(desc="df.describe()")
     answer:str = dspy.OutputField()
+
+
+def get_analyst(df, strict=True):
+    """
+    """
+    return dspy.ReAct(AnalystSig, tools=[return_pandas_query_tool(df.copy(), strict=strict)])

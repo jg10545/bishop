@@ -42,7 +42,7 @@ def validate_code(code: str) -> bool:
 
     return True
 
-def code_checker(code):
+def code_checker(code:str, human_in_loop:bool=False):
     """
     Input a string containing some code. Return "pass" or "fail" depending on
     whether the code passes our checks.
@@ -64,20 +64,10 @@ def code_checker(code):
         result = "fail: eval() not permitted"
     elif "exec(" in code:
         result = "fail: exec() not permited"
-    print(result)
-    return result
-
-def code_checker_with_human_in_loop(code):
-    """
-    Input a string containing some code. Return "pass" or "fail" depending on
-    whether the code passes our checks.
-    """
-    result = code_checker(code)
-    if result == "pass":
+    if human_in_loop & (result == "pass"):
         print(code)
         answer = input("Press enter if this code is OK; otherwise explain the problem:")
         if len(answer.strip()) == 0:
-            return result
-        else:
-            return f"fail: {answer}"
+            result = f"fail: {answer}"
+    print(result)
     return result

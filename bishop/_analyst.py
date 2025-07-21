@@ -55,7 +55,7 @@ def return_pandas_query_tool(df, strict=False):
             result = "command not allowed!"
         elif ";" in command:
             result = "multi-line commands not allowed!"
-        elif not command.startswith("pd.")|command.startswith("df"):
+        elif not command.startswith("pd.")|command.startswith("df")|command.startswith("(pd.")|command.startswith("(df"):
             result ="command not allowed! must start with `pd.` or `df.`"
         elif command.startswith("pd.read")|command.startswith("pd.to_"):
             result = "not allowed to read from or write to disk"
@@ -68,9 +68,11 @@ def return_pandas_query_tool(df, strict=False):
                     # df["colum_name"].FUNCTION(), etc
                     for f in command.split(".")[1:]:
                         func = f.split("(")[0]
-                        if func not in PD_WHITELIST+DF_WHITELIST:
-                             allowed = False
-                             result = f"function {func} not permitted"
+                        # make sure we're not flagging on decimal numbers
+                        if not all(char.isdigit() for char in func):
+                            if func not in PD_WHITELIST+DF_WHITELIST:
+                                allowed = False
+                                result = f"function {func} not permitted"
                 if allowed:
                     result = eval(command)
             except Exception as e:
@@ -95,7 +97,8 @@ class AnalystSig(dspy.Signature):
     answer:str = dspy.OutputField()
 
 
-def get_analyst(df, strict=True):
+def get_analyst(df, strict=True, max_iters=25):
     """
     """
-    return dspy.ReAct(AnalystSig, tools=[return_pandas_query_tool(df.copy(), strict=strict)])
+    return dspy.ReAct(AnalystSig, tools=[return_pandas_query_tool(df.copy(), strict=strict)], 
+                      max_iters=max_iters)

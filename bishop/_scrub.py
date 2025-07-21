@@ -67,7 +67,7 @@ def code_checker(code:str, human_in_loop:bool=False):
     if human_in_loop & (result == "pass"):
         print(code)
         answer = input("Press enter if this code is OK; otherwise explain the problem:")
-        if len(answer.strip()) == 0:
+        if len(answer.strip()) > 0:
             result = f"fail: {answer}"
     print(result)
     return result

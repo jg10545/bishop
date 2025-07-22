@@ -20,7 +20,8 @@ class Experimenter(dspy.Module):
     """
 
     def __init__(self, experiment_fn:Callable[str,dict], background:str, metric_name:str, 
-                 result_analysis_question:str, mlflow_tracking_uri:str, experiment_name:str,
+                 result_analysis_question:str, implementation_constraints:str, 
+                 mlflow_tracking_uri:str, experiment_name:str,
                  analyst_max_iters:int=25, 
                  implementer_max_iters:int=25, human_in_loop:bool=True, strict:bool=True,
                  function_name:str="test_fn"):
@@ -30,6 +31,7 @@ class Experimenter(dspy.Module):
         self.background = background
         self.metric_name = metric_name
         self.result_analysis_question = result_analysis_question
+        self.implementation_constraints = implementation_constraints
         self.experiment_name = experiment_name
         self.analyst_max_iters = analyst_max_iters
         self.implementer_max_iters = implementer_max_iters
@@ -39,6 +41,7 @@ class Experimenter(dspy.Module):
 
         mlflow.set_tracking_uri(mlflow_tracking_uri)
         mlflow.set_experiment(experiment_name)
+        mlflow.set_experiment_tag("mlflow.note.content", self._get_description())
 
         self.planner = get_planner()
         self.implementer = get_implementer(max_iters=implementer_max_iters)
@@ -50,7 +53,14 @@ class Experimenter(dspy.Module):
             "tags.status":"status"
         }
 
+    def _get_description(self):
+        return f"""
+        # Background
+        {self.background}
 
+        # Implementation Constraints
+        {self.implementation_constraints}
+        """
 
     def log_param(self, key, value):
         if len(value) > MLFLOW_PARAM_TOKEN_LIMIT:
@@ -79,6 +89,7 @@ class Experimenter(dspy.Module):
                 # Implementer inputs background and hypothesis and writes code   
                 implementation = self.implementer(background=self.background,
                                                   hypothesis=hypothesis,
+                                                  constraints=self.implementation_constraints,
                                                   function_name=self.function_name)
                 code = implementation.code
                 # If human-in-loop enabled, get permission to run AFTER Implementer is finished

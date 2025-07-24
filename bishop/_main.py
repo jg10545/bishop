@@ -58,6 +58,9 @@ class Experimenter(dspy.Module):
         # Background
         {self.background}
 
+        # Analysis Question
+        {self.result_analysis_question}
+
         # Implementation Constraints
         {self.implementation_constraints}
         """
@@ -99,7 +102,12 @@ class Experimenter(dspy.Module):
                     raise Exception(f"generated code did not pass final check: {codecheck}")
             self.log_param("code", code)
             # run experiment loop with code
-            results = self.experiment_fn(code)
+            try:
+                results = self.experiment_fn(code)
+            except Exception as e:
+                mlflow.set_tag("status", "fail")
+                mlflow.log_param("error_message", e)
+                return False
             mlflow.log_metric(self.metric_name, results[self.metric_name])
             # pull detailed results from this run
             if "df" in results:

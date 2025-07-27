@@ -20,9 +20,10 @@ def get_runs_as_json(experiment, mapping, round_to=None):
     df = mlflow.search_runs(experiment_names=[experiment])
     output = []
     for e,r in df.iterrows():
-        output.append(
-            {mapping[k]:_round(r[k]) for k in mapping}
-        )
+        if r['tags.mlflow.parentRunId'] is None:
+            output.append(
+                {mapping[k]:_round(r[k]) for k in mapping}
+            )
     return output
 
 def get_dataframe_from_mlflow_artifact(run_id=None, artifact_path=None):

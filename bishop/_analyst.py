@@ -67,9 +67,12 @@ def return_pandas_query_tool(df, strict=False):
                     # split out every case that looks like pd.FUNCTION(), df.FUNCTION(), 
                     # df["colum_name"].FUNCTION(), etc
                     for f in command.split(".")[1:]:
-                        func = f.split("(")[0]
-                        # make sure we're not flagging on decimal numbers
-                        if not all(char.isdigit() for char in func):
+                        # if it's a function call there should be a parenthesis- without this
+                        # check, the function will flag on decimals
+                        if "(" in f:
+                            func = f.split("(")[0]
+                            # make sure we're not flagging on decimal numbers
+                            #if not all(char.isdigit() for char in func):
                             if func not in PD_WHITELIST+DF_WHITELIST:
                                 allowed = False
                                 result = f"function {func} not permitted"

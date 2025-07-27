@@ -78,6 +78,7 @@ class Experimenter(dspy.Module):
         """
         with mlflow.start_run():
             mlflow.set_tag("status", "incomplete")
+            mlflow.log_param("model", dspy.settings.get("lm").model)
             if hypothesis is None:
                 # pull history
                 history = get_runs_as_json(self.experiment_name, self.mlflow_column_mapping, round_to=3)

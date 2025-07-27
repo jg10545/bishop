@@ -22,7 +22,7 @@ PD_WHITELIST = ['array', 'bdate_range', 'concat', 'crosstab', 'cut', 'date_range
                 'unique', 'value_counts', 'wide_to_long']
 
 DF_WHITELIST = ['abs', 'add', 'add_prefix', 'add_suffix', 'agg', 'aggregate', 'align', 'all',
-                'any', 'asfreq', 'asof', 'assign', 'astype', 'at_time', 'backfill', 'between_time',
+                'any', 'asfreq', 'asof', 'astype', 'at_time', 'backfill', 'between_time',
                 'bfill', 'bool', 'clip', 'combine', 'combine_first', 'compare', 'convert_dtypes', 
                 'corr', 'corrwith', 'count', 'cov', 'cummax', 'cummin', 'cumprod', 'cumsum', 'describe',
                 'diff', 'div', 'divide', 'dot', 'drop', 'drop_duplicates', 'droplevel', 'dropna',
@@ -102,6 +102,11 @@ class AnalystSig(dspy.Signature):
 
 def get_analyst(df, strict=True, max_iters=25):
     """
+    Return a dspy ReAct agent that can answer analytic questions about your dataset.
+
+    :df: pandas DataFrame; your dataset
+    :strict: bool; whether to enforce a set of whitelisted pandas functions
+    :max_iters: int; max number of times the agent can query the dataset
     """
     return dspy.ReAct(AnalystSig, tools=[return_pandas_query_tool(df.copy(), strict=strict)], 
                       max_iters=max_iters)

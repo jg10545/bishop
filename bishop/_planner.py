@@ -15,10 +15,13 @@ class PlannerSig(dspy.Signature):
     The next step will be to implement a strategy to test the hypothesis so make sure it's clear, detailed,
     and testable!
     """
-    background:str = dspy.InputField()
-    history:str = dspy.InputField()
-    hypothesis:str = dspy.OutputField()
+    background:str = dspy.InputField(desc="The context and goal of the research project")
+    history:str = dspy.InputField(desc="Overview of what we've tried so far")
+    hypothesis:str = dspy.OutputField(desc="Hypothesis to motivate the next experiment")
 
 
 def get_planner():
+    """
+    Return a dspy ChainOfThought agent to plan the next phase of the experiment.
+    """
     return dspy.ChainOfThought(PlannerSig)

@@ -26,6 +26,24 @@ class Experimenter(dspy.Module):
                  implementer_max_iters:int=25, human_in_loop:bool=True, strict:bool=True,
                  function_name:str="test_fn"):
         """
+        :experiment_fn: python function that inputs a string containing code and outputs a 
+            dictionary of results. This is where the actual experiment happens!
+        :background: string; prompt giving the background/context/goal of the project
+        :metric_name: string; name of the success metric. Should appear in the experiment_fn 
+            output.
+        :result_analysis_question: string; prompt to pass an Analyst agent for reviewing the
+            results of an experiment
+        :implementation_constraints: string; prompt to give a Coder agent to constrain how it
+            implements a function for the next experiment.
+        :analyst_max_iters: int; number of times Analyst agent can query the dataset
+        :implementer_max_iters: int; number of times Coder agent can try writing code for the 
+            next experiment. Current run will end if unable to pass automated checks this many 
+            times.
+        :human_in_loop: bool; if True, require human review before running the Coder agent's
+            code
+        :strict: bool; if True, restrict the Analyst agent to only use a manually-whitelisted
+            subset of the pandas API
+        :function_name: string; name of the function Coder agent should write.
         """
         self.experiment_fn = experiment_fn
         self.background = background
@@ -50,7 +68,8 @@ class Experimenter(dspy.Module):
             "params.hypothesis":"hypothesis",
             f"metrics.{metric_name}":f"{metric_name}",
             "params.analysis":"analysis",
-            "tags.status":"status"
+            "tags.status":"status",
+            "tags.comment":"comment"
         }
 
     def _get_description(self):
@@ -70,6 +89,7 @@ class Experimenter(dspy.Module):
             logging.warning(f"parameter {key} is above the max token limit for MLFlow. Recording only the first {MLFLOW_PARAM_TOKEN_LIMIT} characters.")
         mlflow.log_param(key, value[:MLFLOW_PARAM_TOKEN_LIMIT])
 
+
     def forward(self, 
                 hypothesis:Union[str,None]=None,
                 code:Union[str,None]=None) -> dspy.Prediction:
@@ -78,6 +98,7 @@ class Experimenter(dspy.Module):
         """
         with mlflow.start_run():
             mlflow.set_tag("status", "incomplete")
+            mlflow.set_tag("comment", "none")
             mlflow.log_param("model", dspy.settings.get("lm").model)
             if hypothesis is None:
                 # pull history

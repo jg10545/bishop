@@ -22,7 +22,7 @@ PD_WHITELIST = ['array', 'bdate_range', 'concat', 'crosstab', 'cut', 'date_range
                 'unique', 'value_counts', 'wide_to_long']
 
 DF_WHITELIST = ['abs', 'add', 'add_prefix', 'add_suffix', 'agg', 'aggregate', 'align', 'all',
-                'any', 'asfreq', 'asof', 'assign', 'astype', 'at_time', 'backfill', 'between_time',
+                'any', 'asfreq', 'asof', 'astype', 'at_time', 'backfill', 'between_time',
                 'bfill', 'bool', 'clip', 'combine', 'combine_first', 'compare', 'convert_dtypes', 
                 'corr', 'corrwith', 'count', 'cov', 'cummax', 'cummin', 'cumprod', 'cumsum', 'describe',
                 'diff', 'div', 'divide', 'dot', 'drop', 'drop_duplicates', 'droplevel', 'dropna',
@@ -50,7 +50,7 @@ def return_pandas_query_tool(df, strict=False):
         """
         _ = df.describe()
         exec("import pandas as pd")
-        print("\ncommand:", command)
+        #print("\ncommand:", command)
         if ("lambda" in command.lower())|("pd.eval" in command.lower()):
             result = "command not allowed!"
         elif ";" in command:
@@ -67,9 +67,12 @@ def return_pandas_query_tool(df, strict=False):
                     # split out every case that looks like pd.FUNCTION(), df.FUNCTION(), 
                     # df["colum_name"].FUNCTION(), etc
                     for f in command.split(".")[1:]:
-                        func = f.split("(")[0]
-                        # make sure we're not flagging on decimal numbers
-                        if not all(char.isdigit() for char in func):
+                        # if it's a function call there should be a parenthesis- without this
+                        # check, the function will flag on decimals
+                        if "(" in f:
+                            func = f.split("(")[0]
+                            # make sure we're not flagging on decimal numbers
+                            #if not all(char.isdigit() for char in func):
                             if func not in PD_WHITELIST+DF_WHITELIST:
                                 allowed = False
                                 result = f"function {func} not permitted"
@@ -77,7 +80,7 @@ def return_pandas_query_tool(df, strict=False):
                     result = eval(command)
             except Exception as e:
                 result = f"Command failed with this error: {e}"
-        print("result:", result)
+        #print("result:", result)
         return result
     return pandas_query
 
@@ -99,6 +102,11 @@ class AnalystSig(dspy.Signature):
 
 def get_analyst(df, strict=True, max_iters=25):
     """
+    Return a dspy ReAct agent that can answer analytic questions about your dataset.
+
+    :df: pandas DataFrame; your dataset
+    :strict: bool; whether to enforce a set of whitelisted pandas functions
+    :max_iters: int; max number of times the agent can query the dataset
     """
     return dspy.ReAct(AnalystSig, tools=[return_pandas_query_tool(df.copy(), strict=strict)], 
                       max_iters=max_iters)

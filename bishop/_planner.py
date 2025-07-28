@@ -16,7 +16,7 @@ class PlannerSig(dspy.Signature):
     and testable!
     """
     background:str = dspy.InputField(desc="The context and goal of the research project")
-    history:str = dspy.InputField(desc="Overview of what we've tried so far")
+    history:str = dspy.InputField(desc="Overview of what we've tried so far, possibly including feedback from your supervisor")
     hypothesis:str = dspy.OutputField(desc="Hypothesis to motivate the next experiment")
 
 

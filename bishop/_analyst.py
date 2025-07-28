@@ -50,7 +50,7 @@ def return_pandas_query_tool(df, strict=False):
         """
         _ = df.describe()
         exec("import pandas as pd")
-        print("\ncommand:", command)
+        #print("\ncommand:", command)
         if ("lambda" in command.lower())|("pd.eval" in command.lower()):
             result = "command not allowed!"
         elif ";" in command:
@@ -80,7 +80,7 @@ def return_pandas_query_tool(df, strict=False):
                     result = eval(command)
             except Exception as e:
                 result = f"Command failed with this error: {e}"
-        print("result:", result)
+        #print("result:", result)
         return result
     return pandas_query
 

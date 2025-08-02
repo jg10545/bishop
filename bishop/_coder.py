@@ -1,7 +1,7 @@
 import dspy
 import warnings
 
-from ._scrub import code_checker
+from ._scrub import code_checker, _strip_markdown_from_code
 
 class CoderSig(dspy.Signature):
     """
@@ -57,7 +57,8 @@ class Coder(dspy.Module):
             print(f"code-checker result: {result}")
         return result
     
-    def forward(self, background:str, plan:str, function_name:str, constraints:str="None") -> dspy.Prediction:
+    def forward(self, background:str, plan:str, function_name:str, 
+                constraints:str="None", **kwargs) -> dspy.Prediction:
         """
         write code and make sure it's OK to run
         """
@@ -67,8 +68,8 @@ class Coder(dspy.Module):
                           function_name=function_name,
                           constraints=constraints)
         if self._code_passed_check:
-            if code.code != self._code_passed_check:
-                warnings.warn(f"why did the code change?\npassed check: {self._code_passed_check}\nreturned: {code.code}")
+            if _strip_markdown_from_code(code.code) != self._code_passed_check:
+                warnings.warn(f"why did the code change???\npassed check: {self._code_passed_check}\nreturned: {code.code}")
             return dspy.Prediction(code=self._code_passed_check)
         else:
             raise Exception(f"Coder failed to pass checks!\n{code.code}")

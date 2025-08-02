@@ -229,7 +229,7 @@ class Analyst(dspy.Module):
         return result
     
     def forward(self, question:str, background:str="None", 
-                df:typing.Union[None,pd.core.frame.DataFrame]=None) -> dspy.Prediction:
+                df:typing.Union[None,pd.core.frame.DataFrame]=None, **kwargs) -> dspy.Prediction:
         """
         do analysis
         """

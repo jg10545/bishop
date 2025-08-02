@@ -48,6 +48,7 @@ def _strip_markdown_from_code(code):
 
 def _code_checker(code:str, human_in_loop:bool=False):
     """
+    DEPRECATED
     Input a string containing some code. Return "pass" or "fail" depending on
     whether the code passes our checks.
     """

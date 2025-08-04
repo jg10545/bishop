@@ -1,8 +1,9 @@
 import dspy
+import typing
 
 
 
-class PlannerSig(dspy.Signature):
+class PlannerSigDEPRECATED(dspy.Signature):
     """
     You are a curious and rigorous AI scientist, specializing in data analysis. It is your
     ethical and professional duty to pose difficult questions and challenge assumptions.
@@ -20,8 +21,18 @@ class PlannerSig(dspy.Signature):
     hypothesis:str = dspy.OutputField(desc="Hypothesis to motivate the next experiment")
 
 
-def get_planner():
+class PlannerSig(dspy.Signature):
     """
-    Return a dspy ChainOfThought agent to plan the next phase of the experiment.
+    You are a senior researcher overseeing a laboratory, helping the junior scientists plan out
+    the next phase of their work.
+
+    Input the background for the research, history of previous experiments and their results, and a list
+    of potential hypotheses to test out next. Choose a hypothesis to follow up on, and write a more detailed
+    plan for your proteges to follow.
     """
-    return dspy.ChainOfThought(PlannerSig)
+    background:str = dspy.InputField(desc="The context and goal of the research project")
+    history:str = dspy.InputField(desc="Overview of what we've tried so far, possibly including feedback from your supervisor")
+    hypotheses:typing.List[str] = dspy.InputField(desc="Your colleagues' hypothesis")
+    final_hypothesis:str = dspy.OutputField(desc="Your chosen hypothesis to follow up on next")
+    title:str = dspy.OutputField(desc="A clear, succinct title for this experiment")
+    plan:str = dspy.OutputField(desc="A detailed plan for your lab to follow when implementing this test")

@@ -15,6 +15,14 @@ from ._mlflow import get_runs_as_json
 
 MLFLOW_PARAM_TOKEN_LIMIT = 6000
 
+PRICING = {
+    "gpt4.1":[2., 8.],
+    "kimi_k2":[0.15, 2.5],
+    "Llama4_Maverick":[0.18, 0.6], # Lambda labs pricing
+    "DeepSeek_R1":[0.5,2.18], # Lambda labs pricing
+}
+
+
 
 class Laboratory(dspy.Module):
     """
@@ -147,6 +155,9 @@ class Laboratory(dspy.Module):
         mlflow.log_metric("completion_tokens", completion_tokens)
         mlflow.log_metric("prompt_tokens", prompt_tokens)
         mlflow.log_dict(self.usage, "ml_usage.yaml")
+        for p in PRICING:
+            cost = PRICING[p][0]*prompt_tokens/1e6 + PRICING[p][1]*completion_tokens/1e6
+            mlflow.log_metric(f"cost_estimate_{p}", cost)
 
 
     def forward(self, **kwargs):

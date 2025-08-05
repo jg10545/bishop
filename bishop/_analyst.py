@@ -60,7 +60,7 @@ def return_pandas_query_tool(df, strict=False):
         _ = df.describe()
         exec("import pandas as pd")
         print("\ncommand:", command)
-        if "import" in command.lower():
+        if "import " in command.lower():
             result = "FAIL: import statements not allowed!"
         elif "lambda" in command.lower():
             result = "FAIL: command 'lambda' not allowed!"
@@ -103,7 +103,7 @@ def return_pandas_query_tool(df, strict=False):
     return pandas_query
 
 
-def _pandas_query(command:str, df:pd.core.frame.DataFrame, strict:bool=True) -> str:
+def _pandas_query(command:str, df:pd.core.frame.DataFrame, strict:bool=True, maxlines:int=15) -> str:
     """
     Query the dataset using pandas
     """
@@ -140,8 +140,10 @@ def _pandas_query(command:str, df:pd.core.frame.DataFrame, strict:bool=True) -> 
     if len(failures) == 0:
         try:
             result = eval(command)
+            if len(str(result).split("\n")) > maxlines:
+                result = f"WARNING: result too long; truncating to {maxlines} lines. Please try a different query.\n{result.head(maxlines)}"
         except Exception as e:
-            failures.append("error: {e}")
+            failures.append(f"error: {e}")
     if len(failures) > 0:
         result = "Command failed for the following reasons:"
         for f in failures:
@@ -212,7 +214,7 @@ class Analyst(dspy.Module):
         self.react = dspy.ReAct(AnalystSig, tools=[self.pandas_query], 
                       max_iters=max_iters)
         
-    def update_dataframe(self, df=pd.core.frame.DataFrame):
+    def set_dataframe(self, df=pd.core.frame.DataFrame):
         self.df = df
 
     def pandas_query(self, command:str) -> str:
@@ -234,7 +236,7 @@ class Analyst(dspy.Module):
         do analysis
         """
         if df is not None:
-            self.update_dataframe(df)
+            self.set_dataframe(df)
           
         return self.react(question=question,
                           background=background, 

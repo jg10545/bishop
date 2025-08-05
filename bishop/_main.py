@@ -3,16 +3,178 @@ import mlflow
 import logging
 import json
 
+from dspy.utils.usage_tracker import track_usage
+
 from typing import Union, Callable
 
-from ._analyst import get_analyst
-from ._planner import get_planner
-from ._implementer import get_implementer  
-from ._scrub import code_checker
+from ._ideator import IdeatorSig
+from ._analyst import Analyst
+from ._planner import PlannerSig
+from ._coder import Coder
 from ._mlflow import get_runs_as_json
 
-
 MLFLOW_PARAM_TOKEN_LIMIT = 6000
+
+
+class Laboratory(dspy.Module):
+    """
+    For now assume we're using the same LLM for everything. Could potentially make that configurable in the
+    future, but would require changing a few things.
+    """
+    def __init__(self, lm, experiment_fn, experiment_name, metric_name, prompts, human_in_loop:True, verbose=False):
+        """
+        """
+        #dspy.configure(track_usage=True, lm=lm)
+        self.lm = lm
+        self.model = lm.model
+        self.experiment_name = experiment_name
+        self.metric_name = metric_name
+        self.prompts = prompts
+        self.experiment_fn = experiment_fn
+        self.human_in_loop = human_in_loop
+        self.verbose = verbose
+
+        # set up all our agents
+        self.agents = {}
+        self.usage = {}
+        self.setup()
+
+    def setup(self):
+        """
+        Initialize all the agents and any other metadata we'll need. To customize the lab workflow, subclass 
+        Laboratory and overwrite this function and run_one_experiment(). Add each agents to the self.agents 
+        dictionary.
+        """
+        # create each agent we'll need
+        self.agents["ideator"] = dspy.ChainOfThought(IdeatorSig)
+        self.agents["planner"] = dspy.ChainOfThought(PlannerSig)
+        self.agents["coder"] = Coder(human_in_loop=self.human_in_loop, verbose=self.verbose)
+        self.agents["analyst"] = Analyst(verbose=self.verbose)
+        # identify the columns we'll need from mlflow to report on the 
+        self.mlflow_column_mapping = {
+            #"params.hypothesis":"hypothesis",
+            "params.planner.final_hypothesis":"hypothesis",
+            "params.planner.title":"title",
+            f"metrics.{self.metric_name}":f"{self.metric_name}",
+            #"params.analysis":"analysis",
+            "params.analyst.answer":"analysis",
+            "tags.status":"status",
+            "tags.comment":"comment"
+        }
+        for k in ["background", "analysis_question", "function_name", "constraints"]:
+            assert k in self.prompts, f"Missing prompt {k}"
+
+
+    def run_one_experiment(self, **kwargs):
+        """
+        Run one full experiment. To customize the lab workflow, subclass Laboratory and overwrite this
+        function and setup().
+        """
+        p = self.prompts
+        outdict = {}
+        # review previous work and generate ideas as a list of hypotheses
+        history = json.dumps(get_runs_as_json(self.experiment_name, self.mlflow_column_mapping))
+        # select a hypothesis from the ideas and generate a plan to test it
+        if "plan" not in kwargs:
+            ideas = self._call_agent("ideator", background=p["background"],
+                                    history=history
+                                    )
+            outdict["hypotheses"] = ideas.hypotheses
+            if self.verbose:
+                print(ideas.hypotheses)
+            plan = self._call_agent("planner", background=p["background"],
+                                    history=history,
+                                    hypotheses=ideas.hypotheses,
+                                    constraints=p["constraints"])
+            
+            if self.verbose:
+                print(plan.title)
+                print(plan.final_hypothesis)
+                print(plan.plan)
+        else:
+            plan = {"plan":kwargs["plan"]}
+            mlflow.log_param("planner.plan", kwargs["plan"])
+        for k in plan.keys():
+            outdict[k] = plan[k]
+
+        # implement plan as python code
+        if "code" not in kwargs:
+            code = self._call_agent("coder", background=p["background"],
+                                    plan=plan["plan"], 
+                                    function_name=p["function_name"],
+                                    constraints=p["constraints"]).code
+        else:
+            code = kwargs["code"]
+            mlflow.log_param("coder.code", kwargs["code"])
+        outdict["code"] = code
+        # run the experiment
+        results = self.experiment_fn(code)
+        mlflow.log_metric(self.metric_name, results[self.metric_name])
+        # write up an analysis of the results
+        analysis = self._call_agent("analyst", df=results["df"],
+                                        question=p["analysis_question"],
+                                        background=p["background"])
+        print("analysis keys:", analysis.keys())
+        outdict["analysis"] = analysis.answer
+        return outdict
+
+
+    def _call_agent(self, name, **kwargs):
+        # run inputs through the agent
+        with track_usage() as usage_tracker:
+            outputs = self.agents[name](**kwargs)
+        #outputs.set_lm_usage(usage_tracker.get_total_tokens())
+        self.usage[name] = usage_tracker.get_total_tokens()
+        # log every output to MLflow
+        for k in outputs.keys():
+            if k != "trajectory":
+                self.log_param(f"{name}.{k}", outputs[k])
+        # track usage statistics
+        #self.usage[name] = outputs.get_lm_usage()
+        return outputs
+
+    def _log_usage(self):
+        """
+        Log total token usage as mlflow metrics and usage broken out by agent as an artifact.
+        """
+        completion_tokens = 0
+        prompt_tokens = 0
+        for agent in self.usage:
+            for k in self.usage[agent]:
+                completion_tokens += self.usage[agent][k]['completion_tokens']
+                prompt_tokens += self.usage[agent][k]['prompt_tokens']
+        
+        mlflow.log_metric("completion_tokens", completion_tokens)
+        mlflow.log_metric("prompt_tokens", prompt_tokens)
+        mlflow.log_dict(self.usage, "ml_usage.yaml")
+
+
+    def forward(self, **kwargs):
+        with mlflow.start_run():
+            mlflow.set_tag("status", "incomplete")
+            mlflow.set_tag("comment", "none")
+            try:
+                outputs = self.run_one_experiment(**kwargs)
+                mlflow.set_tag("status", "complete")
+            except Exception as e:
+                mlflow.set_tag("status", "error")
+                mlflow.log_param("error_msg", e)
+                assert False, e
+
+            
+            self._log_usage()
+        return dspy.Prediction(**outputs)
+
+    def log_param(self, key, value):
+        """
+        Wrapper function to manage logging (possibly long) text responses to mlflow
+        """
+        if not isinstance(value, str):
+            value = str(value)
+        if len(value) > MLFLOW_PARAM_TOKEN_LIMIT:
+            logging.warning(f"parameter {key} is above the max token limit for MLFlow. Recording only the first {MLFLOW_PARAM_TOKEN_LIMIT} characters.")
+        mlflow.log_param(key, value[:MLFLOW_PARAM_TOKEN_LIMIT])
+
 
 class Experimenter(dspy.Module):
     """
@@ -103,8 +265,6 @@ class Experimenter(dspy.Module):
             if hypothesis is None:
                 # pull history
                 history = get_runs_as_json(self.experiment_name, self.mlflow_column_mapping, round_to=3)
-                # analyst inputs background, goes through history and reports and conclusions it can draw
-                # MAYBE implement that later
                 hyp = self.planner(background=self.background,
                                    history=json.dumps(history))
                 self.log_param("hypothesis_cot", hyp.reasoning)
@@ -116,7 +276,7 @@ class Experimenter(dspy.Module):
                                                   hypothesis=hypothesis,
                                                   constraints=self.implementation_constraints,
                                                   function_name=self.function_name)
-                code = implementation.code
+                code = _strip_markdown_from_code(implementation.code)
                 # If human-in-loop enabled, get permission to run AFTER Implementer is finished
                 codecheck = code_checker(code, self.human_in_loop)
                 if codecheck != "pass":

@@ -33,6 +33,7 @@ class PlannerSig(dspy.Signature):
     background:str = dspy.InputField(desc="The context and goal of the research project")
     history:str = dspy.InputField(desc="Overview of what we've tried so far, possibly including feedback from your supervisor")
     hypotheses:typing.List[str] = dspy.InputField(desc="Your colleagues' hypothesis")
+    constraints:str = dspy.InputField(desc="Implementation constraints the plan must adhere to")
     final_hypothesis:str = dspy.OutputField(desc="Your chosen hypothesis to follow up on next")
     title:str = dspy.OutputField(desc="A clear, succinct title for this experiment")
     plan:str = dspy.OutputField(desc="A detailed plan for your lab to follow when implementing this test")

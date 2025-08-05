@@ -1,2 +1,2 @@
 
-from ._main import Experimenter
+from ._main import Laboratory

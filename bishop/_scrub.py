@@ -89,7 +89,7 @@ def code_checker(code:str, human_in_loop:bool=False) -> str:
     # sometimes LLMs put code inside a markdown block; let's just strip that out
     code = _strip_markdown_from_code(code)
     failures = []
-    if "import" in code:
+    if "import " in code:
         failures.append("imports not permitted")
     if not code.strip().startswith("def"):
         failures.append(f"code should start with a function definition! starts with {code[:10]} instead.")

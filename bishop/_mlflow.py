@@ -23,7 +23,8 @@ def get_runs_as_json(experiment, mapping, round_to=None):
         #if r['tags.mlflow.parentRunId'] is None:
         if r.get('tags.mlflow.parentRunId', None) is None:
             output.append(
-                {mapping[k]:_round(r[k]) for k in mapping}
+                #{mapping[k]:_round(r[k]) for k in mapping}
+                {mapping[k]:_round(r.get(k,"None")) for k in mapping}
             )
     return output
 

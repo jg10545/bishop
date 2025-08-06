@@ -2,6 +2,7 @@ import dspy
 import mlflow
 import logging
 import json
+from tqdm import tqdm
 
 from dspy.utils.usage_tracker import track_usage
 
@@ -99,12 +100,12 @@ class Laboratory(dspy.Module):
         {self.prompts["background"]}
 
         # Analysis Question
-        {self.prompts["result_analysis_question"]}
+        {self.prompts["analysis_question"]}
 
         # Implementation Constraints
-        {self.prompts["implementation_constraints"]}
+        {self.prompts["constraints"]}
         """
-        mlflow.set_experiment_tag("mlflow.note.content", self._get_description())
+        mlflow.set_experiment_tag("mlflow.note.content", description)
 
 
     def run_one_experiment(self, **kwargs):
@@ -219,4 +220,21 @@ class Laboratory(dspy.Module):
         if len(value) > MLFLOW_PARAM_TOKEN_LIMIT:
             logging.warning(f"parameter {key} is above the max token limit for MLFlow. Recording only the first {MLFLOW_PARAM_TOKEN_LIMIT} characters.")
         mlflow.log_param(key, value[:MLFLOW_PARAM_TOKEN_LIMIT])
+
+
+
+    def experiment_loop(self, N:int=10, **kwargs):
+        """
+        
+        """
+        results = []
+        for n in tqdm(range(N)):
+            try:
+                if n == 0:
+                    results.append(self(**kwargs))
+                else:
+                    results.append(self())
+            except Exception as e:
+                print(f"Experiment failed: {e}")
+        return results
 

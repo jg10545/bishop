@@ -51,56 +51,6 @@ foo = """
         new column won't work.
         """
 
-def return_pandas_query_tool(df, strict=False):
-    def pandas_query(command:str) -> str:
-        """
-        Query the dataset using pandas
-        """
-        
-        _ = df.describe()
-        exec("import pandas as pd")
-        print("\ncommand:", command)
-        if "import " in command.lower():
-            result = "FAIL: import statements not allowed!"
-        elif "lambda" in command.lower():
-            result = "FAIL: command 'lambda' not allowed!"
-        elif "pd.eval" in command.lower():
-            result = "FAIL: command 'eval' not allowed!"
-        elif "np." in command:
-            result = "FAIL: numpy calls not allowed; only pandas"
-        #if ("lambda" in command.lower())|("pd.eval" in command.lower()):
-        #    result = "command not allowed!"
-        elif ";" in command:
-            result = "FAIL: multiple statements not allowed!"
-        # remove "(" for this test because "((df['y'] - df['x']**2)**2).mean()" is OK
-        elif not command.replace("(","").startswith("pd.")|command.replace("(","").startswith("df"):
-            result ="FAIL: command not allowed! must start with `pd.` or `df.`"
-        elif command.startswith("pd.read")|command.startswith("pd.to_"):
-            result = "FAIL: not allowed to read from or write to disk"
-        else:
-            try:
-                allowed = True
-                # strict case: only permit whitelisted function calls
-                if strict:
-                    # split out every case that looks like pd.FUNCTION(), df.FUNCTION(), 
-                    # df["colum_name"].FUNCTION(), etc
-                    for f in command.split(".")[1:]:
-                        # if it's a function call there should be a parenthesis- without this
-                        # check, the function will flag on decimals
-                        if "(" in f:
-                            func = f.split("(")[0]
-                            # make sure we're not flagging on decimal numbers
-                            #if not all(char.isdigit() for char in func):
-                            if func not in PD_WHITELIST+DF_WHITELIST:
-                                allowed = False
-                                result = f"FAIL: function {func} not permitted"
-                if allowed:
-                    result = eval(command)
-            except Exception as e:
-                result = f"FAIL: Command failed with this error: {e}"
-        print("result:", result)
-        return result
-    return pandas_query
 
 
 def _pandas_query(command:str, df:pd.core.frame.DataFrame, strict:bool=True, maxlines:int=15) -> str:

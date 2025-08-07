@@ -77,12 +77,13 @@ class ReActIdeator(dspy.Module):
     def _get_criticism(self, hypothesis):
         if self.verbose:
             print("hypothesis:", hypothesis)
-        criticism = self.critic(background=self.background, history=self.history, hypothesis=hypothesis).feedback
+        criticism = self.critic(background=self.background, history=self._history, hypothesis=hypothesis).feedback
         if self.verbose:
             print("criticism:", criticism)
         return criticism
     
     def forward(self, background, history):
         self.background = background
-        self.history = history
-        return self.ideator(background=background, history=history)
+        self._history = history
+        result = self.ideator(background=background, history=history)
+        return result

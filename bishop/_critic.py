@@ -46,8 +46,8 @@ class LaboratoryWithIdeaCritic(Laboratory):
         self.agents["analyst"] = Analyst(verbose=self.verbose)
         # identify the columns we'll need from mlflow to report on the history of the experiments
         self.mlflow_column_mapping = {
-            "params.planner.final_hypothesis":"hypothesis",
-            "params.planner.title":"title",
+            "params.ideator.hypothesis":"hypothesis",
+            #"params.planner.title":"title",
             f"metrics.{self.metric_name}":f"{self.metric_name}",
             "params.analyst.answer":"analysis",
             "tags.status":"status",
@@ -90,12 +90,13 @@ class LaboratoryWithIdeaCritic(Laboratory):
             outdict["hypothesis"] = ideas.hypothesis
             if self.verbose:
                 print("final hypothesis:", ideas.hypothesis)
-            mlflow.log_param("hypothesis", ideas.hypothesis)
-
+        else:
+            ideas = {"hypothesis":kwargs["hypothesis"]}
+            mlflow.log_param("ideator.hypothesis", ideas["hypothesis"])
         # implement plan as python code
         if "code" not in kwargs:
             code = self._call_agent("coder", background=p["background"],
-                                    plan=ideas.hypothesis, 
+                                    plan=ideas["hypothesis"], 
                                     function_name=p["function_name"],
                                     constraints=p["constraints"]).code
         else:

@@ -199,6 +199,8 @@ class Laboratory(dspy.Module):
         with mlflow.start_run():
             mlflow.set_tag("status", "incomplete")
             mlflow.set_tag("comment", "none")
+            mlflow.log_param("model", self.model)
+            mlflow.log_param("temperature", self.lm.kwargs["temperature"])
             try:
                 outputs = self.run_one_experiment(**kwargs)
                 mlflow.set_tag("status", "complete")

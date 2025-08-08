@@ -64,11 +64,13 @@ class ReActIdeatorSig(dspy.Signature):
 
 class ReActIdeator(dspy.Module):
     """
-    
+    dspy Module that attempts to generate better hypotheses by simulating a conversation
+    between an "ideator" agent and a "critic" agent.
     """
-    def __init__(self, max_iters=5, verbose=False):
+    def __init__(self, max_iters:int=5, verbose:bool=False):
         """
-        
+        :max_iters: int; maximum number of times to iterate between ideator and critic
+        :verbose: bool; whether to print out the interactions as they happen
         """
         self.verbose=verbose
         self.critic = dspy.ChainOfThought(CriticSig)

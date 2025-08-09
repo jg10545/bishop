@@ -28,7 +28,7 @@ DF_WHITELIST = ['abs', 'add', 'add_prefix', 'add_suffix', 'agg', 'aggregate', 'a
                 'corr', 'corrwith', 'count', 'cov', 'cummax', 'cummin', 'cumprod', 'cumsum', 'describe',
                 'diff', 'div', 'divide', 'dot', 'drop', 'drop_duplicates', 'droplevel', 'dropna',
                 'duplicated', 'eq', 'equals', 'ewm', 'expanding', 'explode', 'ffill', 'fillna', 'filter',
-                'first', 'first_valid_index', 'floordiv', 'ge', 'get', 'groupby', 'gt', 'head', 'hist',
+                'first', 'first_valid_index', 'floordiv', 'ge', 'get', 'groupby', 'gt', 'head', 
                 'idxmax', 'idxmin', 'infer_objects', 'info', 'insert', 'interpolate', 'isetitem', 'isin',
                 'isna', 'isnull', 'items', 'iterrows', 'itertuples', 'join', 'keys', 'kurt', 'kurtosis', 'last', 
                 'last_valid_index', 'le', 'lt', 'mask', 'max', 'mean', 'median', 'melt', 'memory_usage', 'merge',
@@ -161,6 +161,7 @@ class Analyst(dspy.Module):
         self.strict = strict
         self.df = df
         self.verbose = verbose
+        self.counter = 0
         self.react = dspy.ReAct(AnalystSig, tools=[self.pandas_query], 
                       max_iters=max_iters)
         
@@ -172,12 +173,13 @@ class Analyst(dspy.Module):
         Use a single line of pandas code to probe the dataset
         """
         if self.verbose:
-            print(f"analyst command: {command}")
+            print(f"({self.counter}) analyst command: {command}")
         result = _pandas_query(command, self.df, strict=self.strict)
         # this is where we could potentially change the output when the LLM
         # keeps repeating a failed query
         if self.verbose:
-            print(f"analyst response: {result}")
+            print(f"({self.counter}) analyst response: {result}")
+        self.counter += 1
         return result
     
     def forward(self, question:str, background:str="None", 
@@ -185,6 +187,7 @@ class Analyst(dspy.Module):
         """
         do analysis
         """
+        self.counter = 0
         if df is not None:
             self.set_dataframe(df)
           

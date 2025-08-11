@@ -1,7 +1,7 @@
 import dspy
 import typing
 
-class _IdeatorSig(dspy.Signature):
+class IdeatorSig(dspy.Signature):
     """
     You are a curious and rigorous AI scientist, specializing in data analysis. It is your
     ethical and professional duty to pose difficult questions and challenge assumptions.

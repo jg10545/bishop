@@ -40,7 +40,7 @@ class LaboratoryWithIdeaCritic(Laboratory):
         This is also a good place to check the prompts the user passes to make sure the right stuff is included.
         """
         # create each agent we'll need
-        self.agents["ideator"] = ReActIdeator()
+        self.agents["ideator"] = ReActIdeator(verbose=self.verbose)
         #self.agents["planner"] = dspy.ChainOfThought(PlannerSig)
         self.agents["coder"] = Coder(human_in_loop=self.human_in_loop, verbose=self.verbose)
         self.agents["analyst"] = Analyst(verbose=self.verbose)
@@ -82,21 +82,21 @@ class LaboratoryWithIdeaCritic(Laboratory):
         history = [h for h in history if h["status"] == "complete"]
         history = json.dumps(history)
         # select a hypothesis from the ideas and generate a plan to test it
-        if "hypothesis" not in kwargs:
+        if "idea" not in kwargs:
 
-            ideas = self._call_agent("ideator", background=p["background"],
+            idea = self._call_agent("ideator", background=p["background"],
                                     history=history
                                     )
-            outdict["hypothesis"] = ideas.hypothesis
+            outdict["idea"] = idea.idea
             if self.verbose:
-                print("final hypothesis:", ideas.hypothesis)
+                print("final hypothesis:", idea.idea)
         else:
-            ideas = {"hypothesis":kwargs["hypothesis"]}
-            mlflow.log_param("ideator.hypothesis", ideas["hypothesis"])
+            idea = {"idea":kwargs["idea"]}
+            mlflow.log_param("ideator.idea", idea["idea"])
         # implement plan as python code
         if "code" not in kwargs:
             code = self._call_agent("coder", background=p["background"],
-                                    plan=ideas["hypothesis"], 
+                                    plan=idea["idea"], 
                                     function_name=p["function_name"],
                                     constraints=p["constraints"]).code
         else:

@@ -1,7 +1,7 @@
 import dspy
 import typing
 
-class IdeatorSig(dspy.Signature):
+class _IdeatorSig(dspy.Signature):
     """
     You are a curious and rigorous AI scientist, specializing in data analysis. It is your
     ethical and professional duty to pose difficult questions and challenge assumptions.
@@ -21,42 +21,40 @@ class IdeatorSig(dspy.Signature):
 
 class CriticSig(dspy.Signature):
     """
-    You are a curious and rigorous AI scientist, and have been asked to provide constructive feedback
-    on your colleague's research. Be critical but fair, so that your feedback will help your colleague
-    improve their work.
+    You are a lead scientist at a top research institution, and have been asked to provide feedback on
+    your colleague's research. Your criticism should be harsh but thorough and fair, to make sure your
+    colleague catches any weak points in his analysis early on. 
 
-    Input the background/context for the research program and the history of our previous experiments;
-    for each, a hypothesis, a summary of analysis after the experiment, and possibly comments from your
-    supervisor. Provide detailed feedback for your colleague's current hypothesis.
+    Use the background for the research program and history of experiments run so far to provide context
+    for your criticism of your colleague's idea for his next step.
     """
     background:str = dspy.InputField()
     history:str = dspy.InputField()
-    hypothesis:str = dspy.InputField()
+    idea:str = dspy.InputField()
     
-    novelty:str = dspy.OutputField(desc="How creative or novel is the hypothesis? Is it sufficiently different from the previous ones?")
-    detail:str = dspy.OutputField(desc="Is the hypothesis detailed enough that we could implement it?")
-    alignment:str = dspy.OutputField(desc="How well does the hypothesis address the patterns seen in analysis of previous results?")
-    practicality:str = dspy.OutputField(desc="Does the hypothesis conform to the limitations laid out in the background?")
-    feedback:str = dspy.OutputField(desc="Any other feedback or criticism on the hypothesis. Did your colleague give a high-level overview, an equation if relevant, and explain why they're suggesting this approach?")
+    novelty:str = dspy.OutputField(desc="How creative or novel is the idea? Is it sufficiently different from the previous ones?")
+    detail:str = dspy.OutputField(desc="Is the idea detailed enough that we could implement it?")
+    alignment:str = dspy.OutputField(desc="How well does the idea address the patterns seen in analysis of previous results?")
+    practicality:str = dspy.OutputField(desc="Does the idea conform to the limitations laid out in the background?")
+    feedback:str = dspy.OutputField(desc="Any other feedback or criticism on the idea. Did your colleague give a high-level overview, an equation if relevant, and explain why they're suggesting this approach?")
 
 class ReActIdeatorSig(dspy.Signature):
     """
-    You are a curious and rigorous AI scientist, currently planning the next phase of your research.
+    You are scientist at a top research instution and are currently planning the next experiment
+    for your program.
 
-    Input the background/context for the research program and the history of our previous experiments;
-    for each, a hypothesis, a summary of analysis after the experiment, and possibly comments from your
-    supervisor. Formulate a clear hypothesis informed by this previous work. Try to be as creative as 
-    possible, to push our research in bold new directions. Avoid small changes like adjusting 
-    hyperparameters or weights, and focus instead on fundamentally different approaches. The next step 
-    will be to implement a strategy to test the hypotheses so make sure it's clear, detailed, and 
-    testable!
+    Using the background for your research and history of previous experiments as context, generate a 
+    novel and idea for the next experiment. Try to be as creative as possible, to push our
+    research in bold new directions. Avoid small changes like adjusting hyperparameters or weights, 
+    and focus instead on fundamentally different approaches informed by what we've tried so far. The next 
+    step will be to implement this idea so make sure it's clear, detailed, and testable!
     
-    When you've formulated your hypothesis, submit it to your colleague for constructive criticism. Use that
-    feedback to iterate on your hypothesis until it's good enough to test!
+    When you've formulated your idea, submit it to your colleague for constructive criticism. Use that
+    feedback to iterate on the idea until it's ready to test!
     """
     background:str = dspy.InputField()
     history:str = dspy.InputField()
-    hypothesis:str = dspy.OutputField(desc="Final hypothesis, including high-level summary, equation if relevant, and explanation of why you're proposing this solution")
+    idea:str = dspy.OutputField(desc="Final idea, including high-level summary, equation if relevant, and explanation of why you're proposing this solution")
 
 
 
@@ -76,10 +74,10 @@ class ReActIdeator(dspy.Module):
         self.critic = dspy.ChainOfThought(CriticSig)
         self.ideator = dspy.ReAct(ReActIdeatorSig, tools=[self._get_criticism], max_iters=max_iters)
 
-    def _get_criticism(self, hypothesis):
+    def _get_criticism(self, idea):
         if self.verbose:
-            print("hypothesis:", hypothesis)
-        criticism = self.critic(background=self.background, history=self._history, hypothesis=hypothesis).feedback
+            print("idea:", idea)
+        criticism = self.critic(background=self.background, history=self._history, idea=idea).feedback
         if self.verbose:
             print("criticism:", criticism)
         return criticism

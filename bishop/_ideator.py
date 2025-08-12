@@ -43,15 +43,8 @@ class CriticSig(dspy.Signature):
     """
     You are a lead scientist at a top research institution, and have been asked to provide feedback on
     your colleague's research. Your criticism should be harsh but thorough and fair, to make sure your
-    colleague catches any weak points in his analysis early on. 
-
-    Use the background for the research program and history of experiments run so far to provide context
-    for your criticism. If the idea is too similar to a previous one, make your colleague differentiate them
-    more. If there are issues in previous analysis not covered by the idea, call them out specifically! If
-    the idea is too vague or makes unsubstantiated claims, make your colleague show their work!
-
-    Remember that you are giving critical feedback on an idea BEFORE we test it experimentally! ONLY
-    critique the idea 
+    colleague catches any weak points in his analysis early on. Use the background for the research program 
+    and history of experiments run so far to provide context for your criticism.
     """
     background:str = dspy.InputField()
     history:str = dspy.InputField()

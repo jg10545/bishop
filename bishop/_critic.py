@@ -98,7 +98,7 @@ class LaboratoryWithIdeaCritic(Laboratory):
             outdict["idea_summary"] = idea.idea_summary
             outdict["idea_explanation"] = idea.idea_explanation
             if self.verbose:
-                print("final idea:", idea.idea)
+                print("final idea:", idea)
         else:
             for k in ["title", "summary"]:
                 if k not in kwargs["idea"]:

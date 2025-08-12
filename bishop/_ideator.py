@@ -50,12 +50,16 @@ class CriticSig(dspy.Signature):
     more. If there are issues in previous analysis not covered by the idea, call them out specifically! If
     the idea is too vague or makes unsubstantiated claims, make your colleague show their work!
 
-    Remember that you are giving critical feedback on an idea BEFORE we test it experimentally!
+    Remember that you are giving critical feedback on an idea BEFORE we test it experimentally! ONLY
+    critique the idea 
     """
     background:str = dspy.InputField()
     history:str = dspy.InputField()
     idea:str = dspy.InputField()
     
+    novelty:str = dspy.OutputField(desc="How creative or novel is the idea? Is it sufficiently different from the previous ones? Call out specific experiments that your colleague may need to differentiate from.")
+    detail:str = dspy.OutputField(desc="Is the idea detailed enough that we could implement it?")
+    alignment:str = dspy.OutputField(desc="How well does the idea address the patterns seen in analysis of previous results? Call out specific previous experiments and analysis.")
     feedback:str = dspy.OutputField()
 
 

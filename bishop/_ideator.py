@@ -49,6 +49,8 @@ class CriticSig(dspy.Signature):
     for your criticism. If the idea is too similar to a previous one, make your colleague differentiate them
     more. If there are issues in previous analysis not covered by the idea, call them out specifically! If
     the idea is too vague or makes unsubstantiated claims, make your colleague show their work!
+
+    Remember that you are giving critical feedback on an idea BEFORE we test it experimentally!
     """
     background:str = dspy.InputField()
     history:str = dspy.InputField()

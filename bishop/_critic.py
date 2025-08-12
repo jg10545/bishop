@@ -93,7 +93,10 @@ class LaboratoryWithIdeaCritic(Laboratory):
             idea = self._call_agent("ideator", background=p["background"],
                                     history=history
                                     )
-            outdict["idea"] = idea.idea
+            #outdict["idea"] = idea.idea
+            outdict["idea_title"] = idea.idea_title
+            outdict["idea_summary"] = idea.idea_summary
+            outdict["idea_explanation"] = idea.idea_explanation
             if self.verbose:
                 print("final idea:", idea.idea)
         else:

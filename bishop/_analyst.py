@@ -129,19 +129,10 @@ class AnalystSig(dspy.Signature):
     background:str = dspy.InputField()
     question:str = dspy.InputField()
     description:str = dspy.InputField(desc="df.describe()")
-    answer:str = dspy.OutputField()
+    report:str = dspy.OutputField()
+    summary:str = dspy.OutputField()
+    #answer:str = dspy.OutputField()
 
-
-def get_analyst(df, strict=True, max_iters=25):
-    """
-    Return a dspy ReAct agent that can answer analytic questions about your dataset.
-
-    :df: pandas DataFrame; your dataset
-    :strict: bool; whether to enforce a set of whitelisted pandas functions
-    :max_iters: int; max number of times the agent can query the dataset
-    """
-    return dspy.ReAct(AnalystSig, tools=[return_pandas_query_tool(df.copy(), strict=strict)], 
-                      max_iters=max_iters)
 
 
 class Analyst(dspy.Module):

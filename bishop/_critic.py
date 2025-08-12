@@ -46,10 +46,13 @@ class LaboratoryWithIdeaCritic(Laboratory):
         self.agents["analyst"] = Analyst(verbose=self.verbose)
         # identify the columns we'll need from mlflow to report on the history of the experiments
         self.mlflow_column_mapping = {
-            "params.ideator.hypothesis":"hypothesis",
+            #"params.ideator.hypothesis":"hypothesis",
             #"params.planner.title":"title",
+            "params.ideator.idea_title":"title",
+            "params.ideator.idea_summary":"summary",
             f"metrics.{self.metric_name}":f"{self.metric_name}",
-            "params.analyst.answer":"analysis",
+            #"params.analyst.answer":"analysis",
+            "params.analyst.summary":"analysis",
             "tags.status":"status",
             "tags.comment":"comment"
         }
@@ -73,14 +76,17 @@ class LaboratoryWithIdeaCritic(Laboratory):
         """
         Run one full experiment. To customize the lab workflow, subclass Laboratory and overwrite this
         function and setup().
+
+        :idea: should be a dictionary with keys "title" and "summary"
         """
         p = self.prompts
         outdict = {}
         # review previous work and generate ideas as a list of hypotheses
         # TRY SOMETHING DIFFERENT for this one: only return completed runs from history
-        history = get_runs_as_json(self.experiment_name, self.mlflow_column_mapping)
-        history = [h for h in history if h["status"] == "complete"]
-        history = json.dumps(history)
+        history = self._get_history(status="complete")
+        #history = get_runs_as_json(self.experiment_name, self.mlflow_column_mapping)
+        #history = [h for h in history if h["status"] == "complete"]
+        #history = json.dumps(history)
         # select a hypothesis from the ideas and generate a plan to test it
         if "idea" not in kwargs:
 
@@ -91,8 +97,11 @@ class LaboratoryWithIdeaCritic(Laboratory):
             if self.verbose:
                 print("final idea:", idea.idea)
         else:
-            idea = {"idea":kwargs["idea"]}
-            mlflow.log_param("ideator.idea", idea["idea"])
+            for k in ["title", "summary"]:
+                if k not in kwargs["idea"]:
+                    assert False, f"missing key {k} from idea dictionary"
+            #idea = {"idea":kwargs["idea"]}
+            mlflow.log_params({"ideator.idea"+k:kwargs["idea"][k] for k in kwargs["idea"]})
         # implement plan as python code
         if "code" not in kwargs:
             code = self._call_agent("coder", background=p["background"],
@@ -110,5 +119,7 @@ class LaboratoryWithIdeaCritic(Laboratory):
         analysis = self._call_agent("analyst", df=results["df"],
                                         question=p["analysis_question"],
                                         background=p["background"])
-        outdict["analysis"] = analysis.answer
+        #outdict["analysis"] = analysis.answer
+        outdict["analysis_report"] = analysis.report
+        outdict["analysis_summary"] = analysis.summary
         return outdict

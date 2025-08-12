@@ -19,7 +19,7 @@ class IdeatorSig(dspy.Signature):
     hypotheses:typing.List[str] = dspy.OutputField(desc="Hypotheses to motivate the next experiment")
 
 
-class CriticSig(dspy.Signature):
+class _CriticSig(dspy.Signature):
     """
     You are a lead scientist at a top research institution, and have been asked to provide feedback on
     your colleague's research. Your criticism should be harsh but thorough and fair, to make sure your
@@ -38,6 +38,25 @@ class CriticSig(dspy.Signature):
     practicality:str = dspy.OutputField(desc="Does the idea conform to the limitations laid out in the background?")
     feedback:str = dspy.OutputField(desc="Any other feedback or criticism on the idea. Did your colleague give a high-level overview, an equation if relevant, and explain why they're suggesting this approach?")
 
+
+class CriticSig(dspy.Signature):
+    """
+    You are a lead scientist at a top research institution, and have been asked to provide feedback on
+    your colleague's research. Your criticism should be harsh but thorough and fair, to make sure your
+    colleague catches any weak points in his analysis early on. 
+
+    Use the background for the research program and history of experiments run so far to provide context
+    for your criticism. If the idea is too similar to a previous one, make your colleague differentiate them
+    more. If there are issues in previous analysis not covered by the idea, call them out specifically! If
+    the idea is too vague or makes unsubstantiated claims, make your colleague show their work!
+    """
+    background:str = dspy.InputField()
+    history:str = dspy.InputField()
+    idea:str = dspy.InputField()
+    
+    feedback:str = dspy.OutputField()
+
+
 class ReActIdeatorSig(dspy.Signature):
     """
     You are scientist at a top research instution and are currently planning the next experiment
@@ -54,7 +73,10 @@ class ReActIdeatorSig(dspy.Signature):
     """
     background:str = dspy.InputField()
     history:str = dspy.InputField()
-    idea:str = dspy.OutputField(desc="Final idea, including high-level summary, equation if relevant, and explanation of why you're proposing this solution")
+    idea_title:str = dspy.OutputField(desc="Concise but descriptive name for the idea, to easily differentiate it from others.")
+    idea_summary:str = dspy.OutputField(desc="Short technical explanation of the idea; 2-3 sentences max plus an equation if necessary")
+    idea_explanation:str = dspy.OutputField(desc="Detailed explanation of the idea, including SPECIFICS on how it intends to address analysis of previous ideas")
+    #idea:str = dspy.OutputField(desc="Final idea, including high-level summary, equation if relevant, and explanation of why you're proposing this solution")
 
 
 
@@ -70,19 +92,22 @@ class ReActIdeator(dspy.Module):
         :max_iters: int; maximum number of times to iterate between ideator and critic
         :verbose: bool; whether to print out the interactions as they happen
         """
+        self.counter = 0
         self.verbose=verbose
         self.critic = dspy.ChainOfThought(CriticSig)
         self.ideator = dspy.ReAct(ReActIdeatorSig, tools=[self._get_criticism], max_iters=max_iters)
 
     def _get_criticism(self, idea):
         if self.verbose:
-            print("idea:", idea)
+            print(f"({self.counter}) idea:", idea)
         criticism = self.critic(background=self.background, history=self._history, idea=idea).feedback
         if self.verbose:
-            print("criticism:", criticism)
+            print(f"(self.counter) criticism:", criticism)
+        self.counter += 1
         return criticism
     
     def forward(self, background, history):
+        self.counter = 0
         self.background = background
         self._history = history
         result = self.ideator(background=background, history=history)

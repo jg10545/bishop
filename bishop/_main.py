@@ -42,7 +42,8 @@ class Laboratory(dspy.Module):
     * call dspy.configure(lm=lm, track_usage=True)
     * configure MLFlow with mlflow.set_tracking_uri() and mlflow.set_experiment()
     """
-    def __init__(self, lm, experiment_fn, experiment_name, metric_name, prompts, human_in_loop:True, verbose=False):
+    def __init__(self, lm, experiment_fn, experiment_name, metric_name, prompts, human_in_loop:True, verbose=False,
+                 round_to=2, max_runs=25):
         """
         :lm: dspy.LM object; the language model used by the agents in this experiment
         :experiment_fn: python function that handles all the details of running the actual experiment.
@@ -55,6 +56,8 @@ class Laboratory(dspy.Module):
             the background for the experiment and constraints for the python function
         :human_in_loop: bool; if True, require human review before running the machine-generated experiment code
         :verbose: bool; if True, print stuff out at every stage.
+        :round_to:
+        :max_runs:
         """
         self.lm = lm
         self.model = lm.model
@@ -64,6 +67,8 @@ class Laboratory(dspy.Module):
         self.experiment_fn = experiment_fn
         self.human_in_loop = human_in_loop
         self.verbose = verbose
+        self.round_to = round_to
+        self.max_runs = max_runs
 
         # set up all our agents
         self.agents = {}
@@ -107,6 +112,14 @@ class Laboratory(dspy.Module):
         """
         mlflow.set_experiment_tag("mlflow.note.content", description)
 
+    def _get_history(self, **kwargs):
+        """
+        Get run history as a json formatted string.
+        """
+        history = get_runs_as_json(self.experiment_name, self.mlflow_column_mapping, 
+                                           round_to=self.round_to, max_runs=self.max_runs, **kwargs)
+        return json.dumps(history)
+
 
     def run_one_experiment(self, **kwargs):
         """
@@ -116,7 +129,8 @@ class Laboratory(dspy.Module):
         p = self.prompts
         outdict = {}
         # review previous work and generate ideas as a list of hypotheses
-        history = json.dumps(get_runs_as_json(self.experiment_name, self.mlflow_column_mapping))
+        #history = json.dumps(get_runs_as_json(self.experiment_name, self.mlflow_column_mapping))
+        history = self._get_history()
         # select a hypothesis from the ideas and generate a plan to test it
         if "plan" not in kwargs:
             ideas = self._call_agent("ideator", background=p["background"],

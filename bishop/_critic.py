@@ -108,7 +108,7 @@ class LaboratoryWithIdeaCritic(Laboratory):
         # implement plan as python code
         if "code" not in kwargs:
             code = self._call_agent("coder", background=p["background"],
-                                    plan=idea["idea"], 
+                                    plan=idea["idea_explanation"], 
                                     function_name=p["function_name"],
                                     constraints=p["constraints"]).code
         else:

@@ -45,6 +45,9 @@ class CriticSig(dspy.Signature):
     your colleague's research. Your criticism should be harsh but thorough and fair, to make sure your
     colleague catches any weak points in his analysis early on. Use the background for the research program 
     and history of experiments run so far to provide context for your criticism.
+
+    DO NOT suggest additional experiments, hyperparameter tuning, or literature review. Your focus should be 
+    exclusively on the merits of this idea in relation to the experiments performed so far.
     """
     background:str = dspy.InputField()
     history:str = dspy.InputField()
@@ -101,7 +104,7 @@ class ReActIdeator(dspy.Module):
             print(f"({self.counter}) idea:", idea)
         criticism = self.critic(background=self.background, history=self._history, idea=idea).feedback
         if self.verbose:
-            print(f"(self.counter) criticism:", criticism)
+            print(f"({self.counter}) criticism:", criticism)
         self.counter += 1
         return criticism
     

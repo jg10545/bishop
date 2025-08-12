@@ -101,7 +101,7 @@ class LaboratoryWithIdeaCritic(Laboratory):
                 if k not in kwargs["idea"]:
                     assert False, f"missing key {k} from idea dictionary"
             #idea = {"idea":kwargs["idea"]}
-            mlflow.log_params({"ideator.idea"+k:kwargs["idea"][k] for k in kwargs["idea"]})
+            mlflow.log_params({"ideator.idea_"+k:kwargs["idea"][k] for k in kwargs["idea"]})
         # implement plan as python code
         if "code" not in kwargs:
             code = self._call_agent("coder", background=p["background"],

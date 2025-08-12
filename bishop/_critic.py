@@ -89,7 +89,7 @@ class LaboratoryWithIdeaCritic(Laboratory):
                                     )
             outdict["idea"] = idea.idea
             if self.verbose:
-                print("final hypothesis:", idea.idea)
+                print("final idea:", idea.idea)
         else:
             idea = {"idea":kwargs["idea"]}
             mlflow.log_param("ideator.idea", idea["idea"])

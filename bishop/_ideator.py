@@ -1,5 +1,6 @@
 import dspy
 import typing
+import json
 
 class IdeatorSig(dspy.Signature):
     """
@@ -17,6 +18,25 @@ class IdeatorSig(dspy.Signature):
     background:str = dspy.InputField(desc="The context and goal of the research project")
     history:str = dspy.InputField(desc="Overview of what we've tried so far, possibly including feedback from your supervisor")
     hypotheses:typing.List[str] = dspy.OutputField(desc="Hypotheses to motivate the next experiment")
+
+# from The AI Scientist: Towards Fully Automated Open-Ended Scientific Discovery by Lu et al
+
+class AIScientistIdeatorSig(dspy.Signature):
+    """
+    You are an ambitious AI PhD student who is looking to publish a paper
+    that will contribute significantly to the field.
+    """
+    task_description:str = dspy.InputField()
+    previous_ideas:typing.List[str] = dspy.InputField(desc="The ideas you have already generated")
+    thought:str = dspy.OutputField(desc="Briefly discuss your intuitions and motivations for the idea. Detail your high-level plan, necessary design choices and ideal outcomes of the experiments. Justify how the idea is different from the existing ones.")
+    name:str = dspy.OutputField(desc="A shortened descriptor of the idea. Lowercase, no spaces, underscores allowed.")
+    title:str = dspy.OutputField(desc="A title for the idea, will be used for report writing.")
+    experiment:str = dspy.OutputField(desc="An outline of the implementation.")
+    interestingness:int = dspy.OutputField(desc="A rating from 1 to 10 (lowest to highest). Be cautious and realistic in your ratings.")
+    feasibility:int = dspy.OutputField(desc="A rating from 1 to 10 (lowest to highest). Be cautious and realistic in your ratings.")
+    novelty:int = dspy.OutputField(desc="A rating from 1 to 10 (lowest to highest). Be cautious and realistic in your ratings.")
+
+
 
 
 class _CriticSig(dspy.Signature):

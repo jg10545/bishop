@@ -57,9 +57,6 @@ class LaboratoryWithNoAnalyst(Laboratory):
         # Background
         {self.prompts["background"]}
 
-        # Analysis Question
-        {self.prompts["analysis_question"]}
-
         # Implementation Constraints
         {self.prompts["constraints"]}
         """

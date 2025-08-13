@@ -45,7 +45,7 @@ class LaboratoryWithNoAnalyst(Laboratory):
         # identify the columns we'll need from mlflow to report on the history of the experiments
         self.mlflow_column_mapping = {
             "params.ideator.experiment":"experiment",
-            "params.ideator.idea_title":"title",
+            "params.ideator.title":"title",
             f"metrics.{self.metric_name}":f"{self.metric_name}",
             "tags.status":"status",
             "tags.comment":"comment"
@@ -89,11 +89,11 @@ class LaboratoryWithNoAnalyst(Laboratory):
                 if k not in kwargs["idea"]:
                     assert False, f"missing key {k} from idea dictionary"
             #idea = {"idea":kwargs["idea"]}
-            mlflow.log_params({"ideator.idea_"+k:kwargs["idea"][k] for k in kwargs["idea"]})
+            mlflow.log_params({"ideator."+k:kwargs["idea"][k] for k in kwargs["idea"]})
         # implement plan as python code
         if "code" not in kwargs:
             code = self._call_agent("coder", background=p["background"],
-                                    plan=idea["idea_explanation"], 
+                                    plan=idea["experiment"], 
                                     function_name=p["function_name"],
                                     constraints=p["constraints"]).code
         else:

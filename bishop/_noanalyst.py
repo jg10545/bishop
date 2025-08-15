@@ -46,10 +46,12 @@ class LaboratoryWithNoAnalyst(Laboratory):
         self.mlflow_column_mapping = {
             "params.ideator.experiment":"experiment",
             "params.ideator.title":"title",
-            f"metrics.{self.metric_name}":f"{self.metric_name}",
+            #f"metrics.{self.metric_name}":f"{self.metric_name}",
             "tags.status":"status",
             "tags.comment":"comment"
         }
+        for m in self.metric_names:
+            self.mlflow_column_mapping[f"metrics.{m}"] = m
         for k in ["background", "function_name", "constraints"]:
             assert k in self.prompts, f"Missing prompt {k}"
 
@@ -102,5 +104,6 @@ class LaboratoryWithNoAnalyst(Laboratory):
         outdict["code"] = code
         # run the experiment
         results = self.experiment_fn(code)
-        mlflow.log_metric(self.metric_name, results[self.metric_name])
+        for m in self.metric_names:
+            mlflow.log_metric(m, results[m])
         return outdict

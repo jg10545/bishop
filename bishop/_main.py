@@ -42,7 +42,7 @@ class Laboratory(dspy.Module):
     * call dspy.configure(lm=lm, track_usage=True)
     * configure MLFlow with mlflow.set_tracking_uri() and mlflow.set_experiment()
     """
-    def __init__(self, lm, experiment_fn, experiment_name, metric_name, prompts, human_in_loop:True, verbose=False,
+    def __init__(self, lm, experiment_fn, experiment_name, metric_names, prompts, human_in_loop:True, verbose=False,
                  round_to=2, max_runs=25):
         """
         :lm: dspy.LM object; the language model used by the agents in this experiment
@@ -51,7 +51,7 @@ class Laboratory(dspy.Module):
             * It should output a dictionary containing the output metric and "df", a pandas dataframe of results to send
                 to the analyst agent
         :experiment_name: string; name of the mlflow experiment
-        :metric_name: string; name of the performance metric to be maximized/minimized
+        :metric_names: list of strings; name of the performance metrics to be maximized/minimized
         :prompts: dictionary of contextual prompts for the different agents. By default this should include things like
             the background for the experiment and constraints for the python function
         :human_in_loop: bool; if True, require human review before running the machine-generated experiment code
@@ -62,7 +62,7 @@ class Laboratory(dspy.Module):
         self.lm = lm
         self.model = lm.model
         self.experiment_name = experiment_name
-        self.metric_name = metric_name
+        self.metric_names = metric_names
         self.prompts = prompts
         self.experiment_fn = experiment_fn
         self.human_in_loop = human_in_loop
@@ -92,11 +92,13 @@ class Laboratory(dspy.Module):
         self.mlflow_column_mapping = {
             "params.planner.final_hypothesis":"hypothesis",
             "params.planner.title":"title",
-            f"metrics.{self.metric_name}":f"{self.metric_name}",
+            #f"metrics.{self.metric_name}":f"{self.metric_name}",
             "params.analyst.answer":"analysis",
             "tags.status":"status",
             "tags.comment":"comment"
         }
+        for m in self.metric_names:
+            self.mlflow_column_mapping[f"metrics.{m}"] = m
         for k in ["background", "analysis_question", "function_name", "constraints"]:
             assert k in self.prompts, f"Missing prompt {k}"
 
@@ -166,7 +168,8 @@ class Laboratory(dspy.Module):
         outdict["code"] = code
         # run the experiment
         results = self.experiment_fn(code)
-        mlflow.log_metric(self.metric_name, results[self.metric_name])
+        for m in self.metric_names:
+            mlflow.log_metric(m, results[m])
         # write up an analysis of the results
         analysis = self._call_agent("analyst", df=results["df"],
                                         question=p["analysis_question"],

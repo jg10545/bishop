@@ -3,6 +3,8 @@ import mlflow
 import logging
 import json
 from tqdm import tqdm
+import numpy as np
+import pandas as pd
 
 from dspy.utils.usage_tracker import track_usage
 
@@ -43,7 +45,7 @@ class Laboratory(dspy.Module):
     * configure MLFlow with mlflow.set_tracking_uri() and mlflow.set_experiment()
     """
     def __init__(self, lm, experiment_fn, experiment_name, metric_names, prompts, human_in_loop:True, verbose=False,
-                 round_to=2, max_runs=25):
+                 round_to=2, max_runs=25, num_experiment_averages=1):
         """
         :lm: dspy.LM object; the language model used by the agents in this experiment
         :experiment_fn: python function that handles all the details of running the actual experiment.
@@ -58,6 +60,7 @@ class Laboratory(dspy.Module):
         :verbose: bool; if True, print stuff out at every stage.
         :round_to:
         :max_runs:
+        :num_experiment_averages:int; number of times to run the experiment code
         """
         self.lm = lm
         self.model = lm.model
@@ -69,6 +72,7 @@ class Laboratory(dspy.Module):
         self.verbose = verbose
         self.round_to = round_to
         self.max_runs = max_runs
+        self.num_experiment_averages = num_experiment_averages
 
         # set up all our agents
         self.agents = {}
@@ -121,6 +125,26 @@ class Laboratory(dspy.Module):
         history = get_runs_as_json(self.experiment_name, self.mlflow_column_mapping, 
                                            round_to=self.round_to, max_runs=self.max_runs, **kwargs)
         return json.dumps(history)
+    
+    def _run_experiments_and_return_average(self, code):
+        if self.num_experiment_averages == 1:
+            return self.experiment_fn(code)
+        else:
+            single_results = [self.experiment_fn(code) for _ in range(self.num_experiment_averages)]
+            results = {}
+            # add a variable tracking which results came from which experiment, then concatenate
+            # the dataframe results
+            if "df" in single_results[0]:
+                df = []
+                for i in range(self.num_experiment_averages):
+                    df.append(single_results[i]["df"])
+                    df[-1]["experiment_index"] = i
+                results["df"] = pd.concat(df)
+            for k in single_results[0]:
+                if k != "df":
+                    results[k] = np.mean([s[k] for s in single_results])
+            return results
+        
 
 
     def run_one_experiment(self, **kwargs):
@@ -167,7 +191,8 @@ class Laboratory(dspy.Module):
             mlflow.log_param("coder.code", kwargs["code"])
         outdict["code"] = code
         # run the experiment
-        results = self.experiment_fn(code)
+        #results = self.experiment_fn(code)
+        results = self._run_experiments_and_return_average(code)
         for m in self.metric_names:
             mlflow.log_metric(m, results[m])
         # write up an analysis of the results
